@@ -1,7 +1,7 @@
 ---
 title: "Activity: Bird Species"
-author: "Your Names Here"
-date: "DUE DATE "
+author: "Willem Krantz"
+date: "06/23 "
 output: html_notebook
 ---
 
@@ -11,17 +11,26 @@ output: html_notebook
 ```{r}
 # Load `tidyverse` and `dcData` packages
 
-
-
+library(tidyverse)
+library(dcData)
+library(data.table)
 
 # Load the `OrdwayBirds` data set into your RStudio environment from the `dcData` package
 
-
+data("OrdwayBirds",package="dcData")
 
 
 # Show a few commands used to inspect the data set a few different ways
 
+OrdwayBirds%>%
+  summarise(count=n())
 
+OrdwayBirds%>%
+  group_by(TrapID, BandNumber)
+
+OrdwayBirds%>%
+  group_by(Year, Day)%>%
+  summarise(count=n())
 
 ```
 
@@ -35,7 +44,11 @@ Before we begin, the book gives us some instructions to select a few key variabl
 
 ```{r}
 # Get the data table & clean up dates (see Data Computing eBook)
-
+OrdwayBirds<-
+  OrdwayBirds%>%
+  select( SpeciesName, Month, Day)%>%
+  mutate( Month= as.numeric(as.character(Month)),
+          Day= as.numeric(as.character(Day)))
 
 
 # Inspect resulting data
@@ -53,10 +66,14 @@ Before we begin, the book gives us some instructions to select a few key variabl
 ```{r}
 # unique species in original data (including mis-spellings)
 
-
+OrdwayBirds%>%
+  group_by(`SpeciesName`)%>%
+  summarise(count=n())
 
 # unique species in the clean list
 
+OrdwaySpeciesNames%>%
+  summarise(count=n())
 
 
 ```
@@ -72,7 +89,11 @@ Before we begin, the book gives us some instructions to select a few key variabl
 
 
 # inner join
-
+corrected<-
+  OrdwayBirds%>%
+  inner_join( OrdwaySpeciesNames)%>%
+  select( Species= SpeciesNameCleaned, Month, Day)%>%
+  na.omit()
 
 
 
@@ -89,7 +110,14 @@ We want to identify the top 5-6 bird species sighted at the Katherine Ordway Nat
 ```{r}
 # count sightings by species in descending order
 
+MajorSpecies<-
+  corrected%>%
+  group_by(Species)%>%
+  summarise(count=n())%>%
+  arrange(desc(count))
 
+data.table(MajorSpecies,
+           options=list(pageLength=6))
 
 
 # a hint in the text book recommends displaying the top 10 species to choose our threshold
@@ -98,8 +126,15 @@ We want to identify the top 5-6 bird species sighted at the Katherine Ordway Nat
 
 # define a sightings threshold; produce a table with only birds belonging to major species
 
-
-
+Top6<-
+  MajorSpecies%>%
+  head(n=6)%>%
+  .$Species
+Top6
+  
+ Majors<-
+   corrected%>%
+   filter(Species %in% Top6)
 
 ```
 
@@ -111,7 +146,10 @@ We now want to produce a month-by-month count for each of the major species, and
 ```{r}
 # prepare glyph-ready data table called `ByMonth`
 
-
+ByMonth<- Majors%>%
+  group_by(Species, Month)%>%
+  summarise(count=n())%>%
+  arrange(Month)
 
 ```
 
@@ -135,20 +173,25 @@ According to the graph, we can answer the questions posed:
 
 ##### 1. Which species are present year-round?  
 
-
+American Goldfinch and the Black Capped Chickadee
 
 ##### 2. Which species are migratory, that is, primarily present in one or two seasons?
 
-
+Field Sparrow, Slate Colored Junco, and Lincoln's Sparrow 
 
 
 ##### 3. What is the peak month for each major species? (bullet list)
 
-
-
+-Am Goldfinch= 10
+-BC Chickadee= 11
+-SC Junco= 10 
+-Lincoln's Sparrow= 9
+-Tree Swallow= 3 
+-Field Sparrow= 5
 
 ##### 4. Which major species are seen in good numbers for at least 6 months of the year?
 
+Slate Colored Junco and the Tree Swallow 
 
 
 ```{r}
